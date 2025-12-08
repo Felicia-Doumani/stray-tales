@@ -4,48 +4,58 @@ import { createClient } from "@/lib/supabase/server";
 export default async function StoryPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
 
-  const supabase = await createClient();   
+  const supabase = await createClient();
 
-  const { data: story, error } = await supabase
+  // Fetch story
+  const { data: story } = await supabase
     .from("stories")
     .select("*")
     .eq("id", id)
     .single();
 
-  if (error || !story) {
-    return <div style={{ padding: "2rem" }}>Story not found.</div>;
-  }
+  // Fetch logged-in user
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  const isOwner = user && user.id === story.user_id;
 
   return (
     <div style={{ padding: "2rem", maxWidth: "700px", margin: "0 auto" }}>
       <h1>{story.title}</h1>
 
-      {story.photo_url && (
-        <img
-          src={story.photo_url}
-          alt={story.title}
-          style={{
-            width: "100%",
-            borderRadius: "12px",
-            marginTop: "1rem",
-            marginBottom: "1.5rem",
-          }}
-        />
-      )}
+      <img
+        src={story.photo_url}
+        alt={story.title}
+        style={{
+          width: "100%",
+          borderRadius: "12px",
+          margin: "1rem 0 1.5rem 0",
+        }}
+      />
 
       <p style={{ whiteSpace: "pre-line", lineHeight: "1.6" }}>
         {story.description}
       </p>
 
-      <p style={{ marginTop: "2rem", color: "#777" }}>
-        <strong>Date:</strong> {story.story_date}
-        <br />
-        {story.location && (
-          <>
-            <strong>Location:</strong> {story.location}
-          </>
-        )}
-      </p>
+      {isOwner && (
+        <div style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
+          <a
+            href={`/admin/stories/edit/${id}`}
+            style={{ padding: "0.5rem 1rem", background: "#0070f3", color: "white", borderRadius: "6px" }}
+          >
+            Edit
+          </a>
+
+          <form action={`/admin/stories/delete/${id}`} method="POST">
+            <button
+              style={{ padding: "0.5rem 1rem", background: "red", color: "white", borderRadius: "6px" }}
+            >
+              Delete
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
