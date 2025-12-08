@@ -1,64 +1,92 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-/* ---------------- SERVER ACTION ---------------- */
+/* -------------------- SERVER ACTION -------------------- */
 
 export async function createStory(formData: FormData) {
   "use server";
 
+  // Create SSR client inside the Server Action
   const supabase = await createClient();
 
+  // Read the admin user ID sent from the hidden field
+  const userId = formData.get("user_id") as string;
+
+  if (!userId) {
+    throw new Error("Missing user_id. Authentication failed.");
+  }
+
+  // Handle file upload
   const file = formData.get("photo") as File;
   const filePath = `${crypto.randomUUID()}-${file.name}`;
 
-  // Upload image
   const upload = await supabase.storage
     .from("stories-photos")
     .upload(filePath, file);
 
-  if (upload.error) throw new Error(upload.error.message);
+  if (upload.error) {
+    throw new Error(upload.error.message);
+  }
 
   const { data: urlData } = supabase.storage
     .from("stories-photos")
     .getPublicUrl(filePath);
 
-  // Other fields
-  const { title, description, date, location, note, status } =
-    Object.fromEntries(formData.entries());
+  // Extract all inputs
+  const fields = Object.fromEntries(formData.entries());
+  const title = fields.title as string;
+  const description = fields.description as string;
+  const date = fields.date as string;
+  const location = fields.location as string;
+  const note = fields.note as string;
+  const status = Number(fields.status);
 
+  // Insert the story with the correct user_id
   const { error } = await supabase.from("stories").insert({
-    title,
-    description,
+    title: title,
+    description: description,
     story_date: date,
-    location,
-    note,
-    status_id: Number(status),
+    location: location,
+    note: note,
+    status_id: status,
     photo_url: urlData.publicUrl,
-    user_id: null,
+    user_id: userId   // <-- REQUIRED BY YOUR DB
   });
 
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message);
+  }
 
   redirect("/admin/stories");
 }
 
-/* ---------------- PAGE COMPONENT ---------------- */
+/* -------------------- PAGE COMPONENT -------------------- */
 
 export default async function NewStoryPage() {
+  // Create the SSR Supabase client for server-side auth check
   const supabase = await createClient();
 
-  // Required SSR-safe auth check
-  const { data: claims } = await supabase.auth.getClaims();
+  // Get logged-in user
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
 
-  if (!claims) {
+  // Block access if no user is logged in
+  if (!user) {
     redirect("/login");
   }
+
+  // Extract user_id to send to the server action
+  const userId = user.id;
 
   return (
     <div style={{ padding: "2rem" }}>
       <h1>Create New Story</h1>
 
+      {/* Hidden user_id ensures the insert succeeds safely */}
       <form action={createStory}>
+        <input type="hidden" name="user_id" value={userId} />
+
         <input type="text" name="title" placeholder="Title" required />
         <br />
 
