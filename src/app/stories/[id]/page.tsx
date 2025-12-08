@@ -1,6 +1,29 @@
 // src/app/stories/[id]/page.tsx
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
+/* -------------------- DELETE SERVER ACTION -------------------- */
+export async function deleteStory(formData: FormData) {
+  "use server";
+
+  const id = formData.get("id") as string;
+
+  const supabase = await createClient();
+
+  // RLS ensures only the owner can delete
+  const { error } = await supabase
+    .from("stories")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  redirect("/stories"); // go back to list
+}
+
+/* -------------------- PAGE -------------------- */
 export default async function StoryPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
 
@@ -42,14 +65,26 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
         <div style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
           <a
             href={`/admin/stories/edit/${id}`}
-            style={{ padding: "0.5rem 1rem", background: "#0070f3", color: "white", borderRadius: "6px" }}
+            style={{
+              padding: "0.5rem 1rem",
+              background: "#0070f3",
+              color: "white",
+              borderRadius: "6px",
+            }}
           >
             Edit
           </a>
 
-          <form action={`/admin/stories/delete/${id}`} method="POST">
+          {/*  Delete button with server action */}
+          <form action={deleteStory}>
+            <input type="hidden" name="id" value={story.id} />
             <button
-              style={{ padding: "0.5rem 1rem", background: "red", color: "white", borderRadius: "6px" }}
+              style={{
+                padding: "0.5rem 1rem",
+                background: "red",
+                color: "white",
+                borderRadius: "6px",
+              }}
             >
               Delete
             </button>
