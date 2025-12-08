@@ -41,23 +41,27 @@ export async function createStory(formData: FormData) {
   const note = fields.note as string;
   const status = Number(fields.status);
 
-  // Insert the story with the correct user_id
-  const { error } = await supabase.from("stories").insert({
-    title: title,
-    description: description,
+  const { data, error } = await supabase
+  .from("stories")
+  .insert({
+    title,
+    description,
     story_date: date,
-    location: location,
-    note: note,
+    location,
+    note,
     status_id: status,
     photo_url: urlData.publicUrl,
-    user_id: userId   // <-- REQUIRED BY YOUR DB
-  });
+    user_id: userId
+  })
+  .select("id")
+  .single();
 
-  if (error) {
-    throw new Error(error.message);
-  }
+if (error) {
+  throw new Error(error.message);
+}
 
-  redirect("/admin/stories");
+redirect(`/stories/${data.id}`);
+
 }
 
 /* -------------------- PAGE COMPONENT -------------------- */
