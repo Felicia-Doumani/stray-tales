@@ -29,7 +29,7 @@ export default function LoginPage() {
     // Wait for the proxy to refresh the session cookies
     await supabase.auth.getSession();
 
-    router.push("/admin/stories/new");
+    router.push("/stories");
   }
 
   return (

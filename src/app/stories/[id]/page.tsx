@@ -1,4 +1,4 @@
-// src/app/stories/[id]/page.tsx
+﻿// src/app/stories/[id]/page.tsx
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -10,7 +10,6 @@ export async function deleteStory(formData: FormData) {
 
   const supabase = await createClient();
 
-  // RLS ensures only the owner can delete
   const { error } = await supabase
     .from("stories")
     .delete()
@@ -20,7 +19,7 @@ export async function deleteStory(formData: FormData) {
     throw new Error(error.message);
   }
 
-  redirect("/stories"); // go back to list
+  redirect("/stories");
 }
 
 /* -------------------- PAGE -------------------- */
@@ -29,22 +28,45 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
 
   const supabase = await createClient();
 
-  // Fetch story
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   const { data: story } = await supabase
     .from("stories")
     .select("*")
     .eq("id", id)
     .single();
 
-  // Fetch logged-in user
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  if (!story) {
+    redirect("/stories");
+  }
 
-  const isOwner = user && user.id === story.user_id;
+  const isOwner = user.id === story.user_id;
 
   return (
     <div style={{ padding: "2rem", maxWidth: "700px", margin: "0 auto" }}>
+
+      {/* BACK BUTTON */}
+      <a
+        href="/stories"
+        style={{
+          display: "inline-block",
+          marginBottom: "1.5rem",
+          padding: "0.4rem 1rem",
+          background: "#ddd",
+          borderRadius: "6px",
+          textDecoration: "none",
+          color: "#333",
+        }}
+      >
+        ← Back
+      </a>
+
       <h1>{story.title}</h1>
 
       <img
@@ -75,7 +97,6 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
             Edit
           </a>
 
-          {/*  Delete button with server action */}
           <form action={deleteStory}>
             <input type="hidden" name="id" value={story.id} />
             <button

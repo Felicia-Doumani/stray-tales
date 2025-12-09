@@ -3,14 +3,39 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function StoriesPage() {
   const supabase = await createClient();
+
+  // Fetch stories
   const { data: stories } = await supabase
     .from("stories")
     .select("*")
     .order("created_at", { ascending: false });
 
+  // Fetch logged-in user
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
   return (
     <div style={{ padding: "2rem" }}>
       <h1>Stories</h1>
+
+      {/* Add Story Button (only for logged-in users) */}
+      {user && (
+        <div style={{ margin: "1rem 0" }}>
+          <a
+            href="/admin/stories/new"
+            style={{
+              padding: "0.6rem 1.2rem",
+              background: "#0070f3",
+              color: "white",
+              borderRadius: "6px",
+              textDecoration: "none"
+            }}
+          >
+            Add Story
+          </a>
+        </div>
+      )}
 
       <div
         style={{

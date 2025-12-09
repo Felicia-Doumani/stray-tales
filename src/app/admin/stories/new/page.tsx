@@ -6,15 +6,18 @@ import { createClient } from "@/lib/supabase/server";
 export async function createStory(formData: FormData) {
   "use server";
 
-  // Create SSR client inside the Server Action
   const supabase = await createClient();
 
-  // Read the admin user ID sent from the hidden field
-  const userId = formData.get("user_id") as string;
+  // Proper SSR user check
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
 
-  if (!userId) {
-    throw new Error("Missing user_id. Authentication failed.");
+  if (!user) {
+    redirect("/login");
   }
+
+  const userId = user.id; // <-- always use the authenticated user
 
   // Handle file upload
   const file = formData.get("photo") as File;
@@ -32,7 +35,7 @@ export async function createStory(formData: FormData) {
     .from("stories-photos")
     .getPublicUrl(filePath);
 
-  // Extract all inputs
+  // Extract form fields
   const fields = Object.fromEntries(formData.entries());
   const title = fields.title as string;
   const description = fields.description as string;
@@ -41,56 +44,47 @@ export async function createStory(formData: FormData) {
   const note = fields.note as string;
   const status = Number(fields.status);
 
+  // Insert story
   const { data, error } = await supabase
-  .from("stories")
-  .insert({
-    title,
-    description,
-    story_date: date,
-    location,
-    note,
-    status_id: status,
-    photo_url: urlData.publicUrl,
-    user_id: userId
-  })
-  .select("id")
-  .single();
+    .from("stories")
+    .insert({
+      title,
+      description,
+      story_date: date,
+      location,
+      note,
+      status_id: status,
+      photo_url: urlData.publicUrl,
+      user_id: userId
+    })
+    .select("id")
+    .single();
 
-if (error) {
-  throw new Error(error.message);
-}
+  if (error) {
+    throw new Error(error.message);
+  }
 
-redirect(`/stories/${data.id}`);
-
+  redirect(`/stories/${data.id}`);
 }
 
 /* -------------------- PAGE COMPONENT -------------------- */
 
 export default async function NewStoryPage() {
-  // Create the SSR Supabase client for server-side auth check
   const supabase = await createClient();
 
-  // Get logged-in user
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
-  // Block access if no user is logged in
   if (!user) {
     redirect("/login");
   }
-
-  // Extract user_id to send to the server action
-  const userId = user.id;
 
   return (
     <div style={{ padding: "2rem" }}>
       <h1>Create New Story</h1>
 
-      {/* Hidden user_id ensures the insert succeeds safely */}
       <form action={createStory}>
-        <input type="hidden" name="user_id" value={userId} />
-
         <input type="text" name="title" placeholder="Title" required />
         <br />
 
