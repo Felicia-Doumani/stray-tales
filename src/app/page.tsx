@@ -6,13 +6,6 @@ export default function Home() {
       <p className="mt-4 text-lg">
         A place to share the stories of stray animals in Samos. Simple, warm, and focused on giving every animal a voice.
       </p>
-
-      <a
-        href="/stories"
-        className="inline-block mt-8 px-6 py-3 bg-black text-white rounded-lg text-lg"
-      >
-        Stories
-      </a>
     </main>
   );
 }

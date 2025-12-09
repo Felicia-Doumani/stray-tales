@@ -28,13 +28,15 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
 
   const supabase = await createClient();
 
+  // Get user (may be null)
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  // ❌ REMOVED LOGIN REDIRECT → PAGE IS NOW PUBLIC
+  // if (!user) {
+  //   redirect("/login");
+  // }
 
   const { data: story } = await supabase
     .from("stories")
@@ -46,7 +48,7 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
     redirect("/stories");
   }
 
-  const isOwner = user.id === story.user_id;
+  const isOwner = user && user.id === story.user_id;
 
   return (
     <div style={{ padding: "2rem", maxWidth: "700px", margin: "0 auto" }}>
@@ -73,7 +75,7 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
         src={story.photo_url}
         alt={story.title}
         style={{
-          width: "100%",
+          width: "50%",
           borderRadius: "12px",
           margin: "1rem 0 1.5rem 0",
         }}
