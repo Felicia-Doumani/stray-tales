@@ -9,7 +9,7 @@ create table stories (
   note text,                                        -- Extra internal notes
   status_id int references statuses(id),            -- Link to status (FK)
   created_at timestamptz not null default now(),    -- Automatically set creation time
-
+  donation_url text,  
   -- Every story must be linked to an authenticated user (admin)
   user_id uuid not null references auth.users(id)
 );
