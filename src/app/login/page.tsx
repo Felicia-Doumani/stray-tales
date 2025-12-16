@@ -1,4 +1,3 @@
-// src/app/login/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -8,21 +7,31 @@ import { createClient } from "@/lib/supabase/client";
 export default function LoginPage() {
   const supabase = createClient();
   const router = useRouter();
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   async function handleLogin(formData: FormData) {
-    setError("");
+    setError(null);
+    setLoading(true);
 
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    setLoading(false);
+
     if (error) {
-      setError("Invalid email or password");
+      // IMPORTANT: show the REAL Supabase error
+      setError(error.message);
+      return;
+    }
+
+    if (!data.session) {
+      setError("No session returned from Supabase");
       return;
     }
 
@@ -52,11 +61,13 @@ export default function LoginPage() {
         />
 
         {error && (
-          <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>
+          <p style={{ color: "red", marginBottom: "1rem" }}>
+            {error}
+          </p>
         )}
 
-        <button type="submit" style={{ width: "100%" }}>
-          Sign in
+        <button type="submit" disabled={loading} style={{ width: "100%" }}>
+          {loading ? "Signing in..." : "Sign in"}
         </button>
       </form>
     </div>
