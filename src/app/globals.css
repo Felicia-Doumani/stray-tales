@@ -8,17 +8,13 @@
 
 html, body {
   font-family: ui-sans-serif, system-ui, sans-serif;
-  background-color: #f2f2f5; /* soft neutral gray */
-  color: #111;
+  background-color: #f2f2f5; 
+  color: #222;
   -webkit-font-smoothing: antialiased;
 }
 
 .container {
   @apply max-w-5xl mx-auto px-4;
-}
-
-a {
-  @apply text-blue-600 hover:text-blue-700 transition;
 }
 
 img {
