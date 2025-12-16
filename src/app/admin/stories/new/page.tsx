@@ -10,7 +10,7 @@ export default function NewStoryPage() {
 
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
   const [extraImageUrls, setExtraImageUrls] = useState<string[]>([]);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
   async function uploadImage(file: File): Promise<string> {
     const filePath = `${crypto.randomUUID()}-${file.name}`;
@@ -19,7 +19,7 @@ export default function NewStoryPage() {
       .from("stories-photos")
       .upload(filePath, file);
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
 
     const { data } = supabase.storage
       .from("stories-photos")
@@ -33,8 +33,8 @@ export default function NewStoryPage() {
     try {
       const url = await uploadImage(file);
       setMainImageUrl(url);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) setError(e.message);
     }
   }
 
@@ -44,8 +44,8 @@ export default function NewStoryPage() {
       const uploads = Array.from(files).map(uploadImage);
       const urls = await Promise.all(uploads);
       setExtraImageUrls((prev) => [...prev, ...urls]);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) setError(e.message);
     }
   }
 
@@ -83,38 +83,34 @@ export default function NewStoryPage() {
         </select>
         <br />
 
-        {/* MAIN IMAGE */}
         <label>Main image</label>
         <input
           type="file"
           accept="image/*"
           required
-          onChange={(e) => e.target.files && handleMainImage(e.target.files[0])}
+          onChange={(e) =>
+            e.target.files && handleMainImage(e.target.files[0])
+          }
         />
         <br />
 
-        {/* EXTRA IMAGES */}
         <label>Extra images</label>
         <input
           type="file"
           accept="image/*"
           multiple
-          onChange={(e) => e.target.files && handleExtraImages(e.target.files)}
+          onChange={(e) =>
+            e.target.files && handleExtraImages(e.target.files)
+          }
         />
         <br />
 
-        {/* HIDDEN FIELDS */}
         {mainImageUrl && (
           <input type="hidden" name="photo_url" value={mainImageUrl} />
         )}
 
         {extraImageUrls.map((url, i) => (
-          <input
-            key={i}
-            type="hidden"
-            name="extra_images"
-            value={url}
-          />
+          <input key={i} type="hidden" name="extra_images" value={url} />
         ))}
 
         {error && <p style={{ color: "red" }}>{error}</p>}
