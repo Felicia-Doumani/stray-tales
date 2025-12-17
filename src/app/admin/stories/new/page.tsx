@@ -118,7 +118,7 @@ export default function NewStoryPage() {
             <option value="4">Back on the streets</option>
             <option value="5">Missing</option>
             <option value="6">In treatment / recovering</option>
-            <option value="7">Gone (deceased)</option>
+            <option value="7">Gone </option>
           </select>
         </div>
 
