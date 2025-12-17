@@ -12,11 +12,25 @@ export async function deleteStory(formData: FormData) {
   redirect("/stories");
 }
 
-export default async function StoryPage(props: { params: Promise<{ id: string }> }) {
+const STATUS_LABELS: Record<number, string> = {
+  1: "Looking for a home",
+  2: "In foster care",
+  3: "Adopted",
+  4: "Back on the streets",
+  5: "Missing",
+  6: "In treatment / recovering",
+  7: "Gone (deceased)",
+};
+
+export default async function StoryPage(props: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await props.params;
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: story } = await supabase
     .from("stories")
@@ -37,15 +51,33 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
 
   return (
     <div style={{ padding: "2rem", maxWidth: "1100px", margin: "0 auto" }}>
-      <Link href="/stories">Back</Link>
+    <Link href="/stories" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", marginBottom: "1rem", padding: "0.35rem 0.7rem", borderRadius: "999px", background: "#e5f6f3", color: "#0f766e", fontSize: "0.8rem", fontWeight: 500, textDecoration: "none" }}>← Back to stories</Link>
 
       <h1 style={{ marginTop: "0.5rem" }}>{story.title}</h1>
 
       {/* DATE + LOCATION */}
-      <p style={{ color: "#666", fontSize: "0.85rem", marginBottom: "1rem" }}>
+      <p style={{ color: "#666", fontSize: "0.85rem", marginBottom: "0.25rem" }}>
         {new Date(story.story_date).toLocaleDateString()}
         {story.location && ` • ${story.location}`}
       </p>
+
+      {/* STATUS */}
+      {story.status_id && (
+        <span
+          style={{
+            display: "inline-block",
+            padding: "0.25rem 0.6rem",
+            borderRadius: "999px",
+            background: "#eef2ff",
+            color: "#3730a3",
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            marginBottom: "1rem",
+          }}
+        >
+          {STATUS_LABELS[story.status_id] ?? "Unknown status"}
+        </span>
+      )}
 
       {/* MAIN IMAGE + ACTIONS */}
       <div
@@ -54,6 +86,7 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
           gridTemplateColumns: "480px auto",
           gap: "1.5rem",
           alignItems: "start",
+          marginTop: "1rem",
         }}
       >
         <Image
@@ -64,7 +97,14 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
           style={{ width: "100%", height: "auto", borderRadius: "12px" }}
         />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem",alignItems: "flex-start" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+            alignItems: "flex-start",
+          }}
+        >
           {story.donation_url && (
             <a
               href={story.donation_url}
@@ -76,7 +116,6 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
                 borderRadius: "5px",
                 fontWeight: 600,
                 fontSize: "0.8rem",
-                textAlign: "center",
                 textDecoration: "none",
                 color: "#111",
               }}
@@ -95,7 +134,6 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
                   color: "white",
                   borderRadius: "5px",
                   fontSize: "0.8rem",
-                  textAlign: "center",
                   textDecoration: "none",
                 }}
               >
@@ -146,9 +184,49 @@ export default async function StoryPage(props: { params: Promise<{ id: string }>
         </div>
       )}
 
-      <p style={{ marginTop: "2rem", whiteSpace: "pre-line", lineHeight: "1.6" }}>
+      {/* DESCRIPTION */}
+      <p
+        style={{
+          marginTop: "2rem",
+          whiteSpace: "pre-line",
+          lineHeight: "1.6",
+        }}
+      >
         {story.description}
       </p>
+
+      {/* IMPORTANT NOTE */}
+      {story.note && (
+        <div
+          style={{
+            marginTop: "3rem",
+            padding: "1.25rem",
+            borderRadius: "12px",
+            background: "#fff7ed",
+            border: "1px solid #fed7aa",
+          }}
+        >
+          <strong
+            style={{
+              display: "block",
+              marginBottom: "0.5rem",
+              color: "#9a3412",
+            }}
+          >
+            Important note
+          </strong>
+          <p
+            style={{
+              margin: 0,
+              whiteSpace: "pre-line",
+              lineHeight: "1.6",
+              color: "#7c2d12",
+            }}
+          >
+            {story.note}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,9 +1,15 @@
--- Create a lookup table for story statuses (e.g., published, pending, etc.)
-create table statuses (
-  id serial primary key,        -- Auto-incrementing ID
-  name text unique not null     -- Status name (unique so no duplicates)
+create table if not exists statuses (
+  id integer primary key,
+  name text unique not null
 );
 
+
 -- Insert default statuses
-insert into statuses (name)
-values ('pending'), ('published'), ('archived');
+insert into statuses (id, name) values
+  (1, 'Looking for a home'),
+  (2, 'In foster care'),
+  (3, 'Adopted'),
+  (4, 'Back on the streets'),
+  (5, 'Missing'),
+  (6, 'In treatment / recovering'),
+  (7, 'Gone');
