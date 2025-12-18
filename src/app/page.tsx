@@ -42,7 +42,7 @@ export default async function HomePage() {
 
           <p>
             The stories shared here are about <span className="font-medium">all animals</span> — cats, dogs, sheep, horses, pigs,
-            birds, and every other animal, visible or forgotten. Anyone who witnesses these lives up close can reach out and
+            birds, and every other animal. Anyone who witnesses these lives up close can reach out and
             share their story, knowing it will be <span className="text-purple-700">heard with care and respect</span>.
           </p>
 

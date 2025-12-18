@@ -17,7 +17,7 @@ export default async function StoriesPage() {
 
   return (
     <div style={{ padding: "2rem" }}>
-    <h1 className="text-lg md:text-xl font-medium tracking-wide text-green-400 max-w-3xl leading-relaxed">
+    <h1 className="text-lg md:text-xl font-medium tracking-wide text-green-700 max-w-2xl leading-relaxed">
       They may not be easy to read, but their stories inspire us to care deeply,
       learn together, and create real positive change.🐾
     </h1>

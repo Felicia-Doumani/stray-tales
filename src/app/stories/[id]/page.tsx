@@ -1,16 +1,11 @@
 ﻿// src/app/stories/[id]/page.tsx
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-
-export async function deleteStory(formData: FormData) {
-  "use server";
-  const id = formData.get("id") as string;
-  const supabase = await createClient();
-  await supabase.from("stories").delete().eq("id", id);
-  redirect("/stories");
-}
 
 const STATUS_LABELS: Record<number, string> = {
   1: "Looking for a home",
@@ -22,46 +17,113 @@ const STATUS_LABELS: Record<number, string> = {
   7: "Gone (deceased)",
 };
 
-export default async function StoryPage(props: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await props.params;
-  const supabase = await createClient();
+export default function StoryPage() {
+  const router = useRouter();
+  const { id } = useParams<{ id: string }>();
+  const supabase = createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [story, setStory] = useState<any | null>(null);
+  const [images, setImages] = useState<string[]>([]);
+  const [isOwner, setIsOwner] = useState(false);
 
-  const { data: story } = await supabase
-    .from("stories")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  if (!story) redirect("/stories");
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: images } = await supabase
-    .from("story_images")
-    .select("id, image_url")
-    .eq("story_id", id)
-    .neq("image_url", story.photo_url)
-    .order("created_at", { ascending: true });
+      const { data: storyData } = await supabase
+        .from("stories")
+        .select("*")
+        .eq("id", id)
+        .single();
 
-  const isOwner = user && user.id === story.user_id;
+      if (!storyData) {
+        router.push("/stories");
+        return;
+      }
+
+      const { data: extraImages } = await supabase
+        .from("story_images")
+        .select("image_url")
+        .eq("story_id", id)
+        .order("created_at", { ascending: true });
+
+      setStory(storyData);
+      setImages([
+        storyData.photo_url,
+        ...(extraImages?.map((i) => i.image_url) ?? []),
+      ]);
+      setIsOwner(user?.id === storyData.user_id);
+    }
+
+    load();
+  }, [id, router, supabase]);
+
+  function openLightbox(index: number) {
+    setCurrentIndex(index);
+    setLightboxOpen(true);
+  }
+
+  function closeLightbox() {
+    setLightboxOpen(false);
+  }
+
+  function next() {
+    setCurrentIndex((i) => (i + 1) % images.length);
+  }
+
+  function prev() {
+    setCurrentIndex((i) => (i - 1 + images.length) % images.length);
+  }
+
+  async function deleteStory() {
+    if (!story?.id) return;
+    await supabase.from("stories").delete().eq("id", story.id);
+    router.push("/stories");
+  }
+
+  if (!story) return null;
 
   return (
     <div style={{ padding: "2rem", maxWidth: "1100px", margin: "0 auto" }}>
-    <Link href="/stories" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", marginBottom: "1rem", padding: "0.35rem 0.7rem", borderRadius: "999px", background: "#e5f6f3", color: "#0f766e", fontSize: "0.8rem", fontWeight: 500, textDecoration: "none" }}>← Back to stories</Link>
+      {/* BACK BUTTON */}
+      <Link
+        href="/stories"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.4rem",
+          marginBottom: "1.2rem",
+          padding: "0.35rem 0.9rem",
+          borderRadius: "999px",
+          background: "#e5f6f3",
+          color: "#0f766e",
+          fontSize: "0.8rem",
+          fontWeight: 500,
+          textDecoration: "none",
+          transition: "all 0.2s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "#ccfbf1";
+          e.currentTarget.style.transform = "translateX(-2px)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "#e5f6f3";
+          e.currentTarget.style.transform = "translateX(0)";
+        }}
+      >
+        ← Back to stories
+      </Link>
 
-      <h1 style={{ marginTop: "0.5rem" }}>{story.title}</h1>
+      <h1>{story.title}</h1>
 
-      {/* DATE + LOCATION */}
-      <p style={{ color: "#666", fontSize: "0.85rem", marginBottom: "0.25rem" }}>
+      <p style={{ color: "#666", fontSize: "0.85rem" }}>
         {new Date(story.story_date).toLocaleDateString()}
         {story.location && ` • ${story.location}`}
       </p>
 
-      {/* STATUS */}
       {story.status_id && (
         <span
           style={{
@@ -75,7 +137,7 @@ export default async function StoryPage(props: {
             marginBottom: "1rem",
           }}
         >
-          {STATUS_LABELS[story.status_id] ?? "Unknown status"}
+          {STATUS_LABELS[story.status_id]}
         </span>
       )}
 
@@ -85,84 +147,100 @@ export default async function StoryPage(props: {
           display: "grid",
           gridTemplateColumns: "480px auto",
           gap: "1.5rem",
-          alignItems: "start",
           marginTop: "1rem",
         }}
       >
-        <Image
-          src={story.photo_url}
-          alt={story.title}
-          width={480}
-          height={480}
-          style={{ width: "100%", height: "auto", borderRadius: "12px" }}
-        />
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-            alignItems: "flex-start",
-          }}
+        <button
+          onClick={() => openLightbox(0)}
+          style={{ border: "none", background: "none", padding: 0, cursor: "pointer" }}
         >
+          <Image
+            src={images[0]}
+            alt={story.title}
+            width={480}
+            height={480}
+            style={{ width: "100%", borderRadius: "12px" }}
+          />
+        </button>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
           {story.donation_url && (
             <a
               href={story.donation_url}
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                padding: "0.35rem 0.75rem",
+                padding: "0.35rem 0.9rem",
                 background: "#ffc439",
-                borderRadius: "5px",
+                borderRadius: "999px",
                 fontWeight: 600,
                 fontSize: "0.8rem",
                 textDecoration: "none",
                 color: "#111",
+                textAlign: "center",
               }}
             >
               Donate via PayPal
             </a>
           )}
 
-          {isOwner && (
-            <>
-              <Link
-                href={`/admin/stories/edit/${id}`}
+
+
+        {isOwner && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", alignItems: "flex-start" }}>
+            <Link
+              href={`/admin/stories/edit/${id}`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "fit-content",
+                padding: "0.25rem 0.6rem",
+                background: "#2563eb",
+                color: "white",
+                borderRadius: "999px",
+                fontSize: "0.7rem",
+                fontWeight: 500,
+                textDecoration: "none",
+              }}
+            >
+              Edit
+            </Link>
+
+            <form action={deleteStory} style={{ margin: 0 }}>
+              <input type="hidden" name="id" value={story.id} />
+              <button
                 style={{
-                  padding: "0.35rem 0.75rem",
-                  background: "#2563eb",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "fit-content",
+                  padding: "0.25rem 0.6rem",
+                  background: "#ef4444",
                   color: "white",
-                  borderRadius: "5px",
-                  fontSize: "0.8rem",
-                  textDecoration: "none",
+                  borderRadius: "999px",
+                  fontSize: "0.7rem",
+                  fontWeight: 500,
+                  border: "none",
+                  cursor: "pointer",
                 }}
               >
-                Edit
-              </Link>
+                Delete
+              </button>
+            </form>
+          </div>
+        )}
 
-              <form action={deleteStory}>
-                <input type="hidden" name="id" value={story.id} />
-                <button
-                  style={{
-                    padding: "0.35rem 0.75rem",
-                    background: "red",
-                    color: "white",
-                    borderRadius: "5px",
-                    fontSize: "0.8rem",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  Delete
-                </button>
-              </form>
-            </>
-          )}
+
+
+
+
+
         </div>
       </div>
 
       {/* EXTRA IMAGES */}
-      {images && images.length > 0 && (
+      {images.length > 1 && (
         <div
           style={{
             display: "grid",
@@ -171,31 +249,28 @@ export default async function StoryPage(props: {
             marginTop: "2rem",
           }}
         >
-          {images.map((img) => (
-            <Image
-              key={img.id}
-              src={img.image_url}
-              alt="Extra image"
-              width={300}
-              height={300}
-              style={{ width: "100%", height: "auto", borderRadius: "8px" }}
-            />
+          {images.slice(1).map((url, i) => (
+            <button
+              key={url}
+              onClick={() => openLightbox(i + 1)}
+              style={{ border: "none", background: "none", padding: 0, cursor: "pointer" }}
+            >
+              <Image
+                src={url}
+                alt="Extra image"
+                width={300}
+                height={300}
+                style={{ width: "100%", borderRadius: "8px" }}
+              />
+            </button>
           ))}
         </div>
       )}
 
-      {/* DESCRIPTION */}
-      <p
-        style={{
-          marginTop: "2rem",
-          whiteSpace: "pre-line",
-          lineHeight: "1.6",
-        }}
-      >
+      <p style={{ marginTop: "2rem", whiteSpace: "pre-line", lineHeight: 1.6 }}>
         {story.description}
       </p>
 
-      {/* IMPORTANT NOTE */}
       {story.note && (
         <div
           style={{
@@ -206,25 +281,52 @@ export default async function StoryPage(props: {
             border: "1px solid #fed7aa",
           }}
         >
-          <strong
-            style={{
-              display: "block",
-              marginBottom: "0.5rem",
-              color: "#9a3412",
+          <strong style={{ color: "#9a3412" }}>What needs to be changed!</strong>
+          <p style={{ whiteSpace: "pre-line", color: "#7c2d12" }}>{story.note}</p>
+        </div>
+      )}
+
+      {/* LIGHTBOX */}
+      {lightboxOpen && (
+        <div
+          onClick={closeLightbox}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.9)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              prev();
             }}
+            style={{ position: "absolute", left: 20, color: "white", fontSize: 32 }}
           >
-            Important note
-          </strong>
-          <p
-            style={{
-              margin: 0,
-              whiteSpace: "pre-line",
-              lineHeight: "1.6",
-              color: "#7c2d12",
+            ‹
+          </button>
+
+          <Image
+            src={images[currentIndex]}
+            alt="Full view"
+            width={1200}
+            height={1200}
+            style={{ maxHeight: "90vh", width: "auto" }}
+          />
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              next();
             }}
+            style={{ position: "absolute", right: 20, color: "white", fontSize: 32 }}
           >
-            {story.note}
-          </p>
+            ›
+          </button>
         </div>
       )}
     </div>
