@@ -68,7 +68,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
                 href="mailto:straytales.samos@gmail.com"
                 className="underline hover:text-white transition"
               >
-                straytales.samos@gmail.com
+                animal.voices.samos@gmail.com
               </a>
             </p>
 
