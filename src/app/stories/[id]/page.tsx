@@ -7,6 +7,19 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
+type Story = {
+  id: string;
+  title: string;
+  description: string;
+  photo_url: string;
+  story_date: string;
+  location: string | null;
+  status_id: number | null;
+  donation_url: string | null;
+  note: string | null;
+  user_id: string;
+};
+
 const STATUS_LABELS: Record<number, string> = {
   1: "Looking for a home",
   2: "In foster care",
@@ -22,7 +35,7 @@ export default function StoryPage() {
   const { id } = useParams<{ id: string }>();
   const supabase = createClient();
 
-  const [story, setStory] = useState<any | null>(null);
+  const [story, setStory] = useState<Story | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [isOwner, setIsOwner] = useState(false);
 
@@ -37,7 +50,7 @@ export default function StoryPage() {
         .from("stories")
         .select("*")
         .eq("id", id)
-        .single();
+        .single<Story>();
 
       if (!storyData) {
         router.push("/stories");
@@ -79,7 +92,7 @@ export default function StoryPage() {
   }
 
   async function deleteStory() {
-    if (!story?.id) return;
+    if (!story) return;
     await supabase.from("stories").delete().eq("id", story.id);
     router.push("/stories");
   }
@@ -88,7 +101,6 @@ export default function StoryPage() {
 
   return (
     <div style={{ padding: "2rem", maxWidth: "1100px", margin: "0 auto" }}>
-      {/* BACK BUTTON */}
       <Link
         href="/stories"
         style={{
@@ -103,15 +115,6 @@ export default function StoryPage() {
           fontSize: "0.8rem",
           fontWeight: 500,
           textDecoration: "none",
-          transition: "all 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "#ccfbf1";
-          e.currentTarget.style.transform = "translateX(-2px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "#e5f6f3";
-          e.currentTarget.style.transform = "translateX(0)";
         }}
       >
         ← Back to stories
@@ -134,7 +137,6 @@ export default function StoryPage() {
             color: "#3730a3",
             fontSize: "0.75rem",
             fontWeight: 600,
-            marginBottom: "1rem",
           }}
         >
           {STATUS_LABELS[story.status_id]}
@@ -163,83 +165,45 @@ export default function StoryPage() {
           />
         </button>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-          {story.donation_url && (
-            <a
-              href={story.donation_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: "0.35rem 0.9rem",
-                background: "#ffc439",
-                borderRadius: "999px",
-                fontWeight: 600,
-                fontSize: "0.8rem",
-                textDecoration: "none",
-                color: "#111",
-                textAlign: "center",
-              }}
-            >
-              Donate via PayPal
-            </a>
-          )}
-
-
-
         {isOwner && (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", alignItems: "flex-start" }}>
             <Link
               href={`/admin/stories/edit/${id}`}
               style={{
                 display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
                 width: "fit-content",
                 padding: "0.25rem 0.6rem",
                 background: "#2563eb",
                 color: "white",
                 borderRadius: "999px",
                 fontSize: "0.7rem",
-                fontWeight: 500,
                 textDecoration: "none",
               }}
             >
               Edit
             </Link>
 
-            <form action={deleteStory} style={{ margin: 0 }}>
-              <input type="hidden" name="id" value={story.id} />
-              <button
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "fit-content",
-                  padding: "0.25rem 0.6rem",
-                  background: "#ef4444",
-                  color: "white",
-                  borderRadius: "999px",
-                  fontSize: "0.7rem",
-                  fontWeight: 500,
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                Delete
-              </button>
-            </form>
+            <button
+              onClick={deleteStory}
+              style={{
+                display: "inline-flex",
+                width: "fit-content",
+                padding: "0.25rem 0.6rem",
+                background: "#ef4444",
+                color: "white",
+                borderRadius: "999px",
+                fontSize: "0.7rem",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Delete
+            </button>
           </div>
         )}
-
-
-
-
-
-
-        </div>
       </div>
 
-      {/* EXTRA IMAGES */}
+      {/* EXTRA IMAGES (CLICKABLE) */}
       {images.length > 1 && (
         <div
           style={{
@@ -270,21 +234,6 @@ export default function StoryPage() {
       <p style={{ marginTop: "2rem", whiteSpace: "pre-line", lineHeight: 1.6 }}>
         {story.description}
       </p>
-
-      {story.note && (
-        <div
-          style={{
-            marginTop: "3rem",
-            padding: "1.25rem",
-            borderRadius: "12px",
-            background: "#fff7ed",
-            border: "1px solid #fed7aa",
-          }}
-        >
-          <strong style={{ color: "#9a3412" }}>What needs to be changed!</strong>
-          <p style={{ whiteSpace: "pre-line", color: "#7c2d12" }}>{story.note}</p>
-        </div>
-      )}
 
       {/* LIGHTBOX */}
       {lightboxOpen && (
