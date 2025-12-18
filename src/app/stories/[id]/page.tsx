@@ -27,7 +27,7 @@ const STATUS_LABELS: Record<number, string> = {
   4: "Back on the streets",
   5: "Missing",
   6: "In treatment / recovering",
-  7: "Gone (deceased)",
+  7: "Gone ",
 };
 
 export default function StoryPage() {
@@ -234,6 +234,39 @@ export default function StoryPage() {
       <p style={{ marginTop: "2rem", whiteSpace: "pre-line", lineHeight: 1.6 }}>
         {story.description}
       </p>
+
+      {story.note && (
+  <div
+    style={{
+      marginTop: "3rem",
+      padding: "1.25rem",
+      borderRadius: "12px",
+      background: "#fff7ed",
+      border: "1px solid #fed7aa",
+    }}
+  >
+    <strong
+      style={{
+        display: "block",
+        marginBottom: "0.5rem",
+        color: "#9a3412",
+      }}
+    >
+      What needs to be changed!
+    </strong>
+    <p
+      style={{
+        margin: 0,
+        whiteSpace: "pre-line",
+        lineHeight: "1.6",
+        color: "#7c2d12",
+      }}
+    >
+      {story.note}
+    </p>
+  </div>
+)}
+
 
       {/* LIGHTBOX */}
       {lightboxOpen && (
