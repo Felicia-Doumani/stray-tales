@@ -119,8 +119,19 @@ export default function StoryPage() {
       >
         ← Back to stories
       </Link>
+        <h1
+          style={{
+            fontSize: "2.3rem",
+            fontWeight: 600,
+            lineHeight: 1.25,
+            letterSpacing: "-0.01em",
+            marginBottom: "0.5rem",
+            color: "#1f2937",
+          }}
+        >
+          {story.title}
+        </h1>
 
-      <h1>{story.title}</h1>
 
       <p style={{ color: "#666", fontSize: "0.85rem" }}>
         {new Date(story.story_date).toLocaleDateString()}
