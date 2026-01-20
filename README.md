@@ -21,6 +21,15 @@ The platform supports public story browsing and role-based content management. A
 - **Backend Services**: Supabase (PostgreSQL, Auth, Storage)
 - **Deployment**: Vercel
 
+## Run with Docker 🐋
+
+**Prerequisites:** Docker Desktop installed  
+**Setup:** Create a `.env.local` file with the required environment variables  
+**Build & run:** `docker compose up --build`  
+**Access:** http://localhost:3000  
+**Stop:** `docker compose down`
+
+
 ## Project Structure
 
 ```text
