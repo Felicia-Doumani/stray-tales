@@ -1,5 +1,7 @@
 # Stray Tales 🐾
 
+🚧 **Active development**
+
 Stray Tales is a production-ready web application developed to record, organize, and communicate animal stories, emergency cases, and fundraising in an efficient and transparent manner, and is actively being developed and improved as a real-world system rather than a prototype.
 
 The project is deliberately designed to mirror professional engineering practices, with a well-defined separation of concerns, scalability in mind, and a clear division between presentation, business logic, and external services.
